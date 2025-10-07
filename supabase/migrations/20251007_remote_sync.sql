@@ -1,0 +1,2 @@
+-- Placeholder to sync local migration history with remote version 20251007
+-- No-op migration
