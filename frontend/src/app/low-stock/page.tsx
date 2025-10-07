@@ -13,7 +13,7 @@ import { barangAPI } from "@/lib/api"
 import Link from "next/link"
 import { toast } from "sonner"
 
-type Barang = { id: string; kode: string; nama: string; stok: number; lokasi_rak: string | null }
+type Barang = { id: string | number; kode: string; nama: string; stok: number; lokasi_rak: string | null }
 
 export default function LowStockPage() {
   const [items, setItems] = useState<Barang[]>([])

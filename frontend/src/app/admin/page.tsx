@@ -12,14 +12,14 @@ import { Label } from "@/components/ui/label"
 import { usersAPI } from "@/lib/api"
 import { toast } from "sonner"
 
-type Profile = { id: string; email: string; role: "admin" | "user"; created_at?: string }
+type Profile = { id: string; email: string; role: "admin" | "user" | "operator"; created_at?: string }
 
 export default function AdminPage() {
   const [list, setList] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
   const [checkingRole, setCheckingRole] = useState(true)
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
-  const [form, setForm] = useState<{ email: string; password: string; role: "admin" | "user"; name?: string }>({
+  const [form, setForm] = useState<{ email: string; password: string; role: "admin" | "user" | "operator"; name?: string }>({
     email: "",
     password: "",
     role: "user",
@@ -146,10 +146,11 @@ export default function AdminPage() {
                     <select
                       className="h-10 w-full rounded-md border bg-background px-3 py-2 text-sm"
                       value={form.role}
-                      onChange={(e: ChangeEvent<HTMLSelectElement>) => setForm({ ...form, role: e.target.value as "admin" | "user" })}
+                      onChange={(e: ChangeEvent<HTMLSelectElement>) => setForm({ ...form, role: e.target.value as "admin" | "user" | "operator" })}
                     >
                       <option value="admin">Admin</option>
                       <option value="user">User</option>
+                      <option value="operator">Operator</option>
                     </select>
                   </div>
                 </div>

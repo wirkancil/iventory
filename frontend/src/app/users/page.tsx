@@ -25,9 +25,9 @@ import { useEffect, useMemo, useState } from "react"
 import { usersAPI } from "@/lib/api"
 
 type UserRow = {
-  id: string
+  id: string | number
   email: string
-  role: 'admin' | 'user'
+  role: 'admin' | 'user' | 'operator'
   created_at?: string
   updated_at?: string
 }
@@ -36,7 +36,7 @@ export default function UsersPage() {
   const [users, setUsers] = useState<UserRow[]>([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState("")
-  const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [updatingId, setUpdatingId] = useState<string | number | null>(null)
 
   useEffect(() => {
     const load = async () => {

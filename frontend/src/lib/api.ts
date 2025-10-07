@@ -1,5 +1,54 @@
 // Catatan: Tentukan base URL di dalam fetchAPI agar tidak terikat ke SSR port.
 
+export type UserRole = 'admin' | 'user' | 'operator'
+
+export interface UserProfile {
+  id: string
+  email: string
+  role: UserRole
+  name?: string | null
+}
+
+export interface BarangPayload {
+  kode: string
+  nama: string
+  stok: number
+  lokasi_rak: string
+}
+
+export interface Barang extends BarangPayload {
+  id: string | number
+  created_at?: string
+  updated_at?: string
+}
+
+export interface CreateUserPayload {
+  email: string
+  password: string
+  role: UserRole
+  name?: string
+}
+
+export type UpdateUserPayload = Partial<{
+  email: string
+  password: string
+  role: UserRole
+  name?: string | null
+}>
+
+export interface TransaksiPayload {
+  id_barang: string
+  jumlah: number
+  tipe_transaksi: 'masuk' | 'keluar'
+  tanggal: string
+}
+
+export interface TransaksiItem extends TransaksiPayload {
+  id: string | number
+  id_user: string | number
+  created_at: string
+}
+
 // Fungsi untuk mendapatkan token dari localStorage
 const getToken = () => {
   if (typeof window !== 'undefined') {
@@ -9,7 +58,7 @@ const getToken = () => {
 };
 
 // Fungsi helper untuk request API
-async function fetchAPI(endpoint: string, options: RequestInit = {}) {
+async function fetchAPI<T = unknown>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'
   const url = `${base}${endpoint}`;
   const token = getToken();
@@ -29,7 +78,8 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     throw new Error(`API error: ${response.statusText}`);
   }
 
-  return response.json();
+  const json = await response.json();
+  return json as T;
 }
 
 // Auth API
@@ -57,25 +107,25 @@ export const barangAPI = {
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     
     const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
-    return fetchAPI(`/barang${query}`);
+    return fetchAPI<Barang[]>(`/barang${query}`);
   },
   getById: (id: string) => {
-    return fetchAPI(`/barang/${id}`);
+    return fetchAPI<Barang>(`/barang/${id}`);
   },
-  create: (data: any) => {
-    return fetchAPI('/barang', {
+  create: (data: BarangPayload) => {
+    return fetchAPI<Barang>('/barang', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
-  update: (id: string, data: any) => {
-    return fetchAPI(`/barang/${id}`, {
+  update: (id: string | number, data: Partial<BarangPayload>) => {
+    return fetchAPI<Barang>(`/barang/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   },
-  delete: (id: string) => {
-    return fetchAPI(`/barang/${id}`, {
+  delete: (id: string | number) => {
+    return fetchAPI<{ message?: string }>(`/barang/${id}`, {
       method: 'DELETE',
     });
   },
@@ -84,29 +134,29 @@ export const barangAPI = {
 // Users API
 export const usersAPI = {
   getAll: () => {
-    return fetchAPI('/user');
+    return fetchAPI<UserProfile[]>('/user');
   },
   getById: (id: string) => {
-    return fetchAPI(`/user/${id}`);
+    return fetchAPI<UserProfile>(`/user/${id}`);
   },
-  me: async () => {
-    const res = await fetchAPI('/user/me');
+  me: async (): Promise<UserProfile | null> => {
+    const res = await fetchAPI<{ user: UserProfile | null }>('/user/me');
     return res?.user ?? null;
   },
-  create: (data: { email: string; password: string; role: 'admin' | 'user'; name?: string }) => {
-    return fetchAPI('/user', {
+  create: (data: CreateUserPayload) => {
+    return fetchAPI<UserProfile>('/user', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
-  update: (id: string, data: any) => {
-    return fetchAPI(`/user/${id}`, {
+  update: (id: string | number, data: UpdateUserPayload) => {
+    return fetchAPI<UserProfile>(`/user/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   },
-  delete: (id: string) => {
-    return fetchAPI(`/user/${id}`, {
+  delete: (id: string | number) => {
+    return fetchAPI<{ message?: string }>(`/user/${id}`, {
       method: 'DELETE',
     });
   },
@@ -127,8 +177,8 @@ export const dashboardAPI = {
 
 // Transaksi API
 export const transaksiAPI = {
-  create: (data: { id_barang: string; jumlah: number; tipe_transaksi: 'masuk' | 'keluar'; tanggal: string }) => {
-    return fetchAPI('/transaksi', {
+  create: (data: TransaksiPayload) => {
+    return fetchAPI<TransaksiItem>('/transaksi', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -139,6 +189,6 @@ export const transaksiAPI = {
     if (params?.tipe_transaksi) queryParams.append('tipe_transaksi', params.tipe_transaksi);
     if (params?.limit) queryParams.append('limit', String(params.limit));
     const q = queryParams.toString() ? `?${queryParams.toString()}` : '';
-    return fetchAPI(`/transaksi${q}`);
+    return fetchAPI<TransaksiItem[]>(`/transaksi${q}`);
   }
 };

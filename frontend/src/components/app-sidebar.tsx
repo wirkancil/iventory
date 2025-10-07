@@ -24,8 +24,8 @@ export function AppSidebar() {
         const me = await usersAPI.me()
         if (mounted) {
           setRole(me?.role ?? null)
-          setName((me as any)?.name ?? (session?.user?.name ?? null))
-          setEmail((me as any)?.email ?? (session?.user?.email ?? null))
+          setName(me?.name ?? session?.user?.name ?? null)
+          setEmail(me?.email ?? session?.user?.email ?? null)
         }
       } catch {
         // ignore

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, type ChangeEvent } from "react"
+import { Suspense, useEffect, useMemo, useState, type ChangeEvent } from "react"
 import { useSearchParams } from "next/navigation"
 import { AppSidebar } from "@/components/app-sidebar"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
@@ -13,10 +13,10 @@ import { Label } from "@/components/ui/label"
 import { barangAPI, transaksiAPI, usersAPI } from "@/lib/api"
 import { toast } from "sonner"
 
-type Barang = { id: string; kode: string; nama: string; stok: number; lokasi_rak: string | null }
-type Transaksi = { id: string; id_barang: string; jumlah: number; tipe_transaksi: "masuk" | "keluar"; tanggal: string; id_user: string; created_at: string }
+type Barang = { id: string | number; kode: string; nama: string; stok: number; lokasi_rak: string | null }
+type Transaksi = { id: string | number; id_barang: string | number; jumlah: number; tipe_transaksi: "masuk" | "keluar"; tanggal: string; id_user: string | number; created_at: string }
 
-export default function TransactionsPage() {
+function TransactionsPageContent() {
   const searchParams = useSearchParams()
   const preselectBarang = searchParams.get("id_barang") || ""
   const preselectType = (searchParams.get("tipe") as "masuk" | "keluar" | null) || null
@@ -75,7 +75,7 @@ export default function TransactionsPage() {
 
   const barangMap = useMemo(() => {
     const m = new Map<string, Barang>()
-    items.forEach((it) => m.set(it.id, it))
+    items.forEach((it) => m.set(String(it.id), it))
     return m
   }, [items])
 
@@ -217,7 +217,7 @@ export default function TransactionsPage() {
                         <td className="p-2">{new Date(h.tanggal || h.created_at).toLocaleDateString()}</td>
                         <td className="p-2">
                           {(() => {
-                            const b = barangMap.get(h.id_barang)
+                            const b = barangMap.get(String(h.id_barang))
                             return b ? `${b.kode} - ${b.nama}` : h.id_barang
                           })()}
                         </td>
@@ -233,5 +233,13 @@ export default function TransactionsPage() {
         </div>
       </SidebarInset>
     </SidebarProvider>
+  )
+}
+
+export default function TransactionsPage() {
+  return (
+    <Suspense fallback={<div className="p-4">Memuat transaksi...</div>}>
+      <TransactionsPageContent />
+    </Suspense>
   )
 }

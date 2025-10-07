@@ -3,8 +3,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { JWT } from "next-auth/jwt";
 import { Session } from "next-auth";
 
-// Definisi tipe untuk user
-interface User {
+// Definisi tipe untuk user lokal
+interface AuthUser {
   id: string;
   name: string;
   email: string;
@@ -28,6 +28,17 @@ interface CustomSession extends Session {
   };
 }
 
+const isAuthUser = (value: unknown): value is AuthUser => {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    "role" in value &&
+    "email" in value &&
+    "name" in value
+  );
+};
+
 const handler = NextAuth({
   providers: [
     CredentialsProvider({
@@ -46,7 +57,7 @@ const handler = NextAuth({
           // Pada implementasi sebenarnya, ini akan memanggil API backend
           
           // Daftar akun yang tersedia
-          const users = [
+          const users: Array<AuthUser & { password: string }> = [
             {
               id: "1",
               name: "Admin Utama",
@@ -74,7 +85,7 @@ const handler = NextAuth({
               name: user.name,
               email: user.email,
               role: user.role,
-            } as User;
+            } satisfies AuthUser;
           }
           
           return null;
@@ -95,8 +106,8 @@ const handler = NextAuth({
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user }: { token: JWT; user: User | undefined }) {
-      if (user) {
+    async jwt({ token, user }) {
+      if (isAuthUser(user)) {
         token.id = user.id;
         token.role = user.role;
       }
@@ -104,8 +115,8 @@ const handler = NextAuth({
     },
     async session({ session, token }: { session: CustomSession; token: JWT }) {
       if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
+        session.user.id = typeof token.id === "string" ? token.id : session.user.id;
+        session.user.role = typeof token.role === "string" ? token.role : session.user.role;
       }
       return session;
     },

@@ -22,7 +22,7 @@ import { LuPlus, LuSearch } from "react-icons/lu"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { useState, useEffect, type ChangeEvent } from "react"
+import { useState, useEffect, useCallback, useRef, type ChangeEvent } from "react"
 import { barangAPI, usersAPI } from "@/lib/api"
 import { toast } from "sonner"
 
@@ -53,9 +53,22 @@ export default function ProductsPage() {
     stok: 0,
     lokasi_rak: ""
   })
-  const [checkingRole, setCheckingRole] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const colCount = isAdmin ? 5 : 4
+  const searchTermRef = useRef("")
+
+  const fetchProducts = useCallback(async (term?: string) => {
+    try {
+      setLoading(true)
+      const data = await barangAPI.getAll({ search: term ?? searchTermRef.current })
+      setProducts(data)
+    } catch (error) {
+      console.error("Error fetching products:", error)
+      toast.error("Gagal memuat data produk")
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   // Fetch products
   useEffect(() => {
@@ -67,29 +80,16 @@ export default function ProductsPage() {
         console.error(e)
         setIsAdmin(false)
       } finally {
-        setCheckingRole(false)
-        fetchProducts()
+        await fetchProducts()
       }
     }
-    init()
-  }, [])
-
-  const fetchProducts = async () => {
-    try {
-      setLoading(true)
-      const data = await barangAPI.getAll({ search: searchTerm })
-      setProducts(data)
-    } catch (error) {
-      console.error("Error fetching products:", error)
-      toast.error("Gagal memuat data produk")
-    } finally {
-      setLoading(false)
-    }
-  }
+    void init()
+  }, [fetchProducts])
 
   // Handle search
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value)
+    searchTermRef.current = e.target.value
   }
 
   // Handle form input change
@@ -112,7 +112,7 @@ export default function ProductsPage() {
       setIsAddDialogOpen(false)
       setFormData({ kode: "", nama: "", stok: 0, lokasi_rak: "" })
       toast.success("Produk berhasil ditambahkan")
-      fetchProducts()
+      void fetchProducts()
     } catch (error) {
       console.error("Error adding product:", error)
       toast.error("Gagal menambahkan produk")
@@ -148,7 +148,7 @@ export default function ProductsPage() {
       await barangAPI.update(currentProduct.id, formData)
       setIsEditDialogOpen(false)
       toast.success("Produk berhasil diperbarui")
-      fetchProducts()
+      void fetchProducts()
     } catch (error) {
       console.error("Error updating product:", error)
       toast.error("Gagal memperbarui produk")
@@ -178,7 +178,7 @@ export default function ProductsPage() {
       await barangAPI.delete(currentProduct.id)
       setIsDeleteDialogOpen(false)
       toast.success("Produk berhasil dihapus")
-      fetchProducts()
+      void fetchProducts()
     } catch (error) {
       console.error("Error deleting product:", error)
       toast.error("Gagal menghapus produk")
@@ -228,10 +228,14 @@ export default function ProductsPage() {
                 className="pl-8"
                 value={searchTerm}
                 onChange={handleSearch}
-                onKeyDown={(e) => e.key === 'Enter' && fetchProducts()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    void fetchProducts()
+                  }
+                }}
               />
             </div>
-            <Button variant="outline" onClick={fetchProducts}>Cari</Button>
+            <Button variant="outline" onClick={() => void fetchProducts()}>Cari</Button>
           </div>
           
           <Card>
@@ -395,7 +399,7 @@ export default function ProductsPage() {
             <DialogTitle>Konfirmasi Hapus</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p>Apakah Anda yakin ingin menghapus produk "{currentProduct?.nama}"?</p>
+            <p>Apakah Anda yakin ingin menghapus produk &quot;{currentProduct?.nama}&quot;?</p>
             <p className="text-sm text-muted-foreground mt-2">Tindakan ini tidak dapat dibatalkan.</p>
           </div>
           <DialogFooter>
